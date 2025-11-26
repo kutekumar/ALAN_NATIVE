@@ -1,0 +1,32 @@
+Generate a React Native Expo TypeScript project skeleton for the "alan-lux" customer app.
+
+Requirements:
+- Use Expo + TypeScript.
+- Configure NativeWind/Tailwind for React Native. Provide `tailwind.config.js` and `babel.config.js` configured for nativewind.
+- Create folder structure:
+  src/
+    navigation/
+    screens/
+    components/
+    services/
+    hooks/
+    context/
+    types/
+  assets/
+    logo.png
+    onboarding/slide1.png
+    onboarding/slide2.png
+    onboarding/slide3.png
+- Add `.env.example` with:
+  EXPO_PUBLIC_SUPABASE_URL=https://mtwburwdescvdngmzcmu.supabase.co
+  EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10d2J1cndkZXNjdmRuZ216Y211Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMTM2MzMsImV4cCI6MjA3NzY4OTYzM30.9Ez2Dg9DdMaqNJy960B5V4U8H8uvz5RS5KyVsSHIZ2c
+- Implement Supabase client in `src/services/supabase.ts` reading env vars via `process.env.EXPO_PUBLIC_SUPABASE_URL` and `process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+- Create `App.tsx` that:
+  - Wraps app in React Query Provider
+  - Wraps in AuthProvider (skeleton)
+  - Loads fonts/assets placeholder
+  - Shows Navigation container (use empty Navigation skeleton)
+- Provide `src/navigation/RootNavigation.tsx` with Bottom Tab placeholder for Home/Orders/Notifications/Profile.
+- Use NativeWind classes in a sample `src/screens/Home.tsx` showing app logo and "Welcome to ALAN LUX" styled.
+
+Return full file contents for: package.json (deps list), App.tsx, tailwind.config.js, babel.config.js, .env.example, src/services/supabase.ts, src/navigation/RootNavigation.tsx, src/screens/Home.tsx, src/context/AuthProvider.tsx (skeleton).
