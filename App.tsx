@@ -1,38 +1,41 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFonts, Suranna_400Regular } from '@expo-google-fonts/suranna';
+import * as SplashScreen from 'expo-splash-screen';
+import { OnboardingProvider } from './src/context/OnboardingProvider';
+import { AuthProvider } from './src/context/AuthProvider';
+import RootNavigation from './src/navigation/RootNavigation';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 export default function App() {
+  let [fontsLoaded] = useFonts({
+    Suranna_400Regular,
+  });
+
+  React.useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>ALAN LUX</Text>
-      <Text style={styles.subtitle}>Luxury Shopping App</Text>
-      <Text style={styles.status}>✅ App is working!</Text>
-    </View>
+    <SafeAreaProvider>
+      <OnboardingProvider>
+        <AuthProvider>
+          <NavigationContainer>
+            <RootNavigation />
+            <StatusBar style="auto" />
+          </NavigationContainer>
+        </AuthProvider>
+      </OnboardingProvider>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#ee7620',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#64748b',
-    marginBottom: 20,
-  },
-  status: {
-    fontSize: 16,
-    color: '#22c55e',
-    fontWeight: '600',
-  },
-});
