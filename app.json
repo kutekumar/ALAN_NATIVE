@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "ALAN LUX",
-    "slug": "alan-lux",
+    "name": "ALAN_NATIVE",
+    "slug": "ALAN_NATIVE",
+    "owner":"andrewkumar",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
