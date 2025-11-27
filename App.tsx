@@ -6,6 +6,8 @@ import { useFonts, Suranna_400Regular } from '@expo-google-fonts/suranna';
 import * as SplashScreen from 'expo-splash-screen';
 import { OnboardingProvider } from './src/context/OnboardingProvider';
 import { AuthProvider } from './src/context/AuthProvider';
+import { CartProvider } from './src/context/CartContext';
+import { QueryProvider } from './src/providers/QueryProvider';
 import RootNavigation from './src/navigation/RootNavigation';
 
 // Keep the splash screen visible while we fetch resources
@@ -28,14 +30,18 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <OnboardingProvider>
-        <AuthProvider>
-          <NavigationContainer>
-            <RootNavigation />
-            <StatusBar style="auto" />
-          </NavigationContainer>
-        </AuthProvider>
-      </OnboardingProvider>
+      <QueryProvider>
+        <OnboardingProvider>
+          <AuthProvider>
+            <CartProvider>
+              <NavigationContainer>
+                <RootNavigation />
+                <StatusBar style="auto" />
+              </NavigationContainer>
+            </CartProvider>
+          </AuthProvider>
+        </OnboardingProvider>
+      </QueryProvider>
     </SafeAreaProvider>
   );
 }

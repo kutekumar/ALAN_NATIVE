@@ -249,7 +249,6 @@ const styles = StyleSheet.create({
   },
   glassmorphismFallback: {
     backgroundColor: 'rgba(248, 250, 252, 0.85)',
-    backdropFilter: 'blur(10px)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.4)',
   },

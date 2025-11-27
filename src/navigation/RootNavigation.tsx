@@ -1,34 +1,37 @@
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthProvider';
 import { useOnboarding } from '../context/OnboardingProvider';
 import HomeScreen from '../screens/Home';
+import RestaurantDetailScreen from '../screens/RestaurantDetail';
+import CartScreen from '../screens/Cart';
+import CheckoutScreen from '../screens/Checkout';
+import OrderDetailScreen from '../screens/OrderDetail';
+import OrdersScreen from '../screens/Orders';
 import ProfileScreen from '../screens/Profile';
 import AuthStack from './AuthStack';
 import Onboarding from '../screens/Onboarding';
+import { MobileLayout } from '../components';
 
 // Placeholder screens
-const OrdersScreen = () => (
-  <View style={styles.placeholderScreen}>
-    <Ionicons name="receipt-outline" size={64} color="#ee7620" />
-    <Text style={styles.placeholderTitle}>Orders</Text>
-    <Text style={styles.placeholderText}>Your order history will appear here</Text>
-  </View>
-);
 
 const NotificationsScreen = () => (
-  <View style={styles.placeholderScreen}>
-    <Ionicons name="notifications-outline" size={64} color="#ee7620" />
-    <Text style={styles.placeholderTitle}>Notifications</Text>
-    <Text style={styles.placeholderText}>Stay updated with your orders</Text>
-  </View>
+  <MobileLayout>
+    <View style={styles.placeholderScreen}>
+      <Ionicons name="notifications-outline" size={64} color="#D4AF37" />
+      <Text style={styles.placeholderTitle}>Notifications</Text>
+      <Text style={styles.placeholderText}>Stay updated with your orders</Text>
+    </View>
+  </MobileLayout>
 );
 
 // ProfileScreen now imported from separate file
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
 function BottomTabNavigator() {
   return (
@@ -51,7 +54,7 @@ function BottomTabNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#ee7620',
+        tabBarActiveTintColor: '#D4AF37',
         tabBarInactiveTintColor: '#64748b',
         headerShown: false,
         tabBarStyle: {
@@ -73,6 +76,36 @@ function BottomTabNavigator() {
       <Tab.Screen name="Notifications" component={NotificationsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
+  );
+}
+
+function MainStackNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        cardStyleInterpolator: ({ current, layouts }) => {
+          return {
+            cardStyle: {
+              transform: [
+                {
+                  translateX: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [layouts.screen.width, 0],
+                  }),
+                },
+              ],
+            },
+          };
+        },
+      }}
+    >
+      <Stack.Screen name="Main" component={BottomTabNavigator} />
+      <Stack.Screen name="RestaurantDetail" component={RestaurantDetailScreen} />
+      <Stack.Screen name="Cart" component={CartScreen} />
+      <Stack.Screen name="Checkout" component={CheckoutScreen} />
+      <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+    </Stack.Navigator>
   );
 }
 
@@ -101,7 +134,7 @@ export default function RootNavigation() {
   }
 
   // Show main app if authenticated
-  return <BottomTabNavigator />;
+  return <MainStackNavigator />;
 }
 
 const styles = StyleSheet.create({

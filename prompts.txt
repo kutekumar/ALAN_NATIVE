@@ -30,3 +30,37 @@ Requirements:
 - Use NativeWind classes in a sample `src/screens/Home.tsx` showing app logo and "Welcome to ALAN LUX" styled.
 
 Return full file contents for: package.json (deps list), App.tsx, tailwind.config.js, babel.config.js, .env.example, src/services/supabase.ts, src/navigation/RootNavigation.tsx, src/screens/Home.tsx, src/context/AuthProvider.tsx (skeleton).
+............
+.....................
+
+
+Implement Home screen after user logged in with restaurant listing using Supabase `restaurants` table.
+
+Requirements:
+- Create `src/hooks/useRestaurants.ts` that uses React Query to fetch restaurants from Supabase:
+  - Query signature: get restaurants with fields id,owner_id,name,description,cuisine_type,address,phone,image_url,rating,open_hours,created_at,updated_at.
+  - Add search filter (by name or city).
+  - Add pagination (limit & offset).
+- Create `src/components/RestaurantCard.tsx` mobile-friendly card with image, name, rating, opening_hours and a "View" button.
+- Update `src/screens/Home.tsx` to:
+  - Show a search input
+  - Show a horizontal "Featured" FlatList of top-rated restaurants (rating >= 4)
+  - Show a vertical FlatList of restaurants with infinite scroll
+
+Return full code for useRestaurants hook, RestaurantCard, and updated Home.tsx. Keep the UI and UX the same with the rest of the app. 
+Arrange in a way the user experience is engaging and fun. Use subtle animation if necessary. 
+
+
+ I like to change the look of the home page when the user logged in.. first i like
+to remove those emoji icons.. (eg. wave emoji icon beside Good Morning) I also want to change the
+sarch icon in search box. the current one looks ugly.. i want to replace that icon with something
+professional looking icon with gold color.. .because i want to make the look of the page with luxary
+gold color.. also change the emoji icon beside "Top Restaurants" .. remove the title "All
+Restaurants". Instead i want to put some divider there.. and I want to add some visual seperation for
+the restuarnt list cards... right now.. the contrast looks weak.. i mean.. each card seem to blend
+with the next.. remember not to break the visual color.. i want to make this page feel luxary with
+some gold color. Right now when i click in the serach box, it show an ugly border black box..when it's
+hightlight it show black border box.. please fix that.. and when i search.. it surely show the
+result.. but when i clear the serach , i want you to show all the restaurants shown again.. right now
+.. after i searach and erase the serach.. it's still show the same serached restaurnt.. you can put
+some filter beside the serach box..

@@ -9,9 +9,11 @@ import {
   TouchableOpacity,
   StatusBar,
   Animated,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { textStyles } from '../styles/fonts';
+import { MobileLayout } from '../components/MobileLayout';
 
 const { width, height } = Dimensions.get('window');
 
@@ -48,6 +50,11 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
+  
+  // Get responsive width - use mobile layout width on web, full width on mobile
+  const isWeb = Platform.OS === 'web';
+  const isMobile = width <= 768;
+  const slideWidth = (isWeb && !isMobile) ? 400 : width;
 
   React.useEffect(() => {
     Animated.parallel([
@@ -68,7 +75,7 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
     if (currentIndex < onboardingData.length - 1) {
       const nextIndex = currentIndex + 1;
       setCurrentIndex(nextIndex);
-      scrollViewRef.current?.scrollTo({ x: nextIndex * width, animated: true });
+      scrollViewRef.current?.scrollTo({ x: nextIndex * slideWidth, animated: true });
     } else {
       onFinish();
     }
@@ -79,70 +86,72 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
   };
 
   const onScroll = (event: any) => {
-    const index = Math.round(event.nativeEvent.contentOffset.x / width);
+    const index = Math.round(event.nativeEvent.contentOffset.x / slideWidth);
     setCurrentIndex(index);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-      
-      {/* Skip Button */}
-      <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-        <Text style={[styles.skipText, textStyles.bodySmall]}>Skip</Text>
-      </TouchableOpacity>
-
-      <ScrollView
-        ref={scrollViewRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        style={styles.scrollView}
-      >
-        {onboardingData.map((item, index) => (
-          <View key={item.id} style={styles.slide}>
-            <View style={styles.imageContainer}>
-              <Image source={item.image} style={styles.image} resizeMode="contain" />
-            </View>
-            
-            <View style={styles.contentContainer}>
-              <Text style={[styles.title, textStyles.onboardingTitle]}>{item.title}</Text>
-              <Text style={[styles.subtitle, textStyles.appSubtitle]}>{item.subtitle}</Text>
-              <Text style={[styles.description, textStyles.onboardingSubtitle]}>{item.description}</Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* Pagination Dots */}
-      <View style={styles.pagination}>
-        {onboardingData.map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.dot,
-              index === currentIndex ? styles.activeDot : styles.inactiveDot,
-            ]}
-          />
-        ))}
-      </View>
-
-      {/* Next/Get Started Button */}
-      <Animated.View
-        style={{
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        }}
-      >
-        <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-          <Text style={[styles.nextButtonText, textStyles.buttonText]}>
-            {currentIndex === onboardingData.length - 1 ? 'Get Started' : 'Next'}
-          </Text>
+    <MobileLayout>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        
+        {/* Skip Button */}
+        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+          <Text style={[styles.skipText, textStyles.bodySmall]}>Skip</Text>
         </TouchableOpacity>
-      </Animated.View>
-    </SafeAreaView>
+
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          style={styles.scrollView}
+        >
+          {onboardingData.map((item, index) => (
+            <View key={item.id} style={[styles.slide, { width: slideWidth }]}>
+              <View style={styles.imageContainer}>
+                <Image source={item.image} style={[styles.image, { width: slideWidth * 0.8 }]} resizeMode="contain" />
+              </View>
+              
+              <View style={styles.contentContainer}>
+                <Text style={[styles.title, textStyles.onboardingTitle]}>{item.title}</Text>
+                <Text style={[styles.subtitle, textStyles.appSubtitle]}>{item.subtitle}</Text>
+                <Text style={[styles.description, textStyles.onboardingSubtitle]}>{item.description}</Text>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+
+        {/* Pagination Dots */}
+        <View style={styles.pagination}>
+          {onboardingData.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                index === currentIndex ? styles.activeDot : styles.inactiveDot,
+              ]}
+            />
+          ))}
+        </View>
+
+        {/* Next/Get Started Button */}
+        <Animated.View
+          style={{
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          }}
+        >
+          <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+            <Text style={[styles.nextButtonText, textStyles.buttonText]}>
+              {currentIndex === onboardingData.length - 1 ? 'Get Started' : 'Next'}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </SafeAreaView>
+    </MobileLayout>
   );
 }
 
@@ -166,7 +175,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   slide: {
-    width,
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 100,
@@ -224,7 +232,7 @@ const styles = StyleSheet.create({
   nextButton: {
     backgroundColor: '#D4AF37',
     marginHorizontal: 24,
-    marginBottom: 40,
+    marginBottom: 80,
     paddingVertical: 18,
     borderRadius: 16,
     shadowColor: '#D4AF37',

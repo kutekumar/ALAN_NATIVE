@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthProvider';
 import { useOnboarding } from '../context/OnboardingProvider';
 import { textStyles } from '../styles/fonts';
+import { MobileLayout } from '../components';
 
 export default function Profile() {
   const { profile, user, signOut } = useAuth();
@@ -54,7 +55,8 @@ export default function Profile() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <MobileLayout>
+      <SafeAreaView style={styles.container}>
       {/* Header Gradient */}
       <LinearGradient
         colors={['#FFF8DC', '#FFFFFF']}
@@ -199,7 +201,8 @@ export default function Profile() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </MobileLayout>
   );
 }
 
