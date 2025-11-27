@@ -2,7 +2,7 @@
   "expo": {
     "name": "ALAN_NATIVE",
     "slug": "alan-lux",
-    "owner":"andrewkumar",
+    "owner": "andrewkumar",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.alanlux.app",
