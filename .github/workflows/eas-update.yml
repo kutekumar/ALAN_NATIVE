@@ -1,0 +1,31 @@
+name: EAS Update (Cloud Deploy)
+
+on:
+  workflow_dispatch:    # Allows manual trigger
+  push:
+    branches:
+      - main            # Auto deploy on push to main
+
+jobs:
+  eas-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: |
+          npm install -g eas-cli
+          npm install
+
+      - name: Run EAS Update (Preview Branch)
+        env:
+          EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}
+        run: |
+          eas update --branch preview --message "Cloud deploy from GitHub Actions"
