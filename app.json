@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.alanlux.app",
@@ -32,16 +34,16 @@
     },
     "plugins": [],
     "scheme": "alan-lux",
-    "extra": {
-      "eas": {
-        "projectId": "alan-lux"
-      }
-    },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
       "url": "https://u.expo.dev/fe684cb7-f8d2-4973-a471-b881ada78949"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "fe684cb7-f8d2-4973-a471-b881ada78949"
+      }
     }
   }
 }
