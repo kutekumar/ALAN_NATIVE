@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "ALAN_NATIVE",
-    "slug": "ALAN_NATIVE",
+    "slug": "alan-lux",
     "owner":"andrewkumar",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -36,7 +36,7 @@
     "scheme": "alan-lux",
     "extra": {
       "eas": {
-        "projectId": "fe684cb7-f8d2-4973-a471-b881ada78949"
+        "projectId": "alan-lux"
       }
     },
     "runtimeVersion": {
