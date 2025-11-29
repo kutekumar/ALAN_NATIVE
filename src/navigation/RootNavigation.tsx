@@ -1,11 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthProvider';
 import { useOnboarding } from '../context/OnboardingProvider';
 import HomeScreen from '../screens/Home';
+import BlogScreen from '../screens/Blog';
+import BlogPostDetailScreen from '../screens/BlogPostDetail';
 import RestaurantDetailScreen from '../screens/RestaurantDetail';
 import CartScreen from '../screens/Cart';
 import CheckoutScreen from '../screens/Checkout';
@@ -14,68 +14,52 @@ import OrdersScreen from '../screens/Orders';
 import ProfileScreen from '../screens/Profile';
 import AuthStack from './AuthStack';
 import Onboarding from '../screens/Onboarding';
-import { MobileLayout } from '../components';
+import { MobileLayout, GlassLayoutWrapper } from '../components';
 
-// Placeholder screens
-
-const NotificationsScreen = () => (
-  <MobileLayout>
-    <View style={styles.placeholderScreen}>
-      <Ionicons name="notifications-outline" size={64} color="#D4AF37" />
-      <Text style={styles.placeholderTitle}>Notifications</Text>
-      <Text style={styles.placeholderText}>Stay updated with your orders</Text>
-    </View>
-  </MobileLayout>
-);
-
-// ProfileScreen now imported from separate file
-
-const Tab = createBottomTabNavigator();
+// Main Tab Navigator with Glass Effect
 const Stack = createStackNavigator();
 
-function BottomTabNavigator() {
+function CustomTabNavigator() {
+  const [activeTab, setActiveTab] = useState('Home');
+  const [homeKey, setHomeKey] = useState(0);
+
+  const handleTabPress = (tabName: string) => {
+    if (tabName === 'Home' && activeTab !== 'Home') {
+      // Force complete remount of Home component
+      setHomeKey(prev => prev + 1);
+    }
+    setActiveTab(tabName);
+  };
+
+  const handleNotificationPress = () => {
+    Alert.alert('Notifications', 'You have no new notifications');
+  };
+
+  const renderScreen = () => {
+    switch (activeTab) {
+      case 'Home':
+        return <HomeScreen key={`home-${homeKey}`} />;
+      case 'Orders':
+        return <OrdersScreen />;
+      case 'Blog':
+        return <BlogScreen />;
+      case 'Profile':
+        return <ProfileScreen />;
+      default:
+        return <HomeScreen key={`home-${homeKey}`} />;
+    }
+  };
+
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
-
-          if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Orders') {
-            iconName = focused ? 'receipt' : 'receipt-outline';
-          } else if (route.name === 'Notifications') {
-            iconName = focused ? 'notifications' : 'notifications-outline';
-          } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
-          } else {
-            iconName = 'help-outline';
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#D4AF37',
-        tabBarInactiveTintColor: '#64748b',
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#ffffff',
-          borderTopColor: '#f1f5f9',
-          borderTopWidth: 1,
-          paddingBottom: 8,
-          paddingTop: 8,
-          height: 80,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-        },
-      })}
-    >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Orders" component={OrdersScreen} />
-      <Tab.Screen name="Notifications" component={NotificationsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
-    </Tab.Navigator>
+    <MobileLayout>
+      <GlassLayoutWrapper
+        activeTab={activeTab}
+        onTabPress={handleTabPress}
+        onNotificationPress={handleNotificationPress}
+      >
+        {renderScreen()}
+      </GlassLayoutWrapper>
+    </MobileLayout>
   );
 }
 
@@ -100,11 +84,12 @@ function MainStackNavigator() {
         },
       }}
     >
-      <Stack.Screen name="Main" component={BottomTabNavigator} />
+      <Stack.Screen name="Main" component={CustomTabNavigator} />
       <Stack.Screen name="RestaurantDetail" component={RestaurantDetailScreen} />
       <Stack.Screen name="Cart" component={CartScreen} />
       <Stack.Screen name="Checkout" component={CheckoutScreen} />
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+      <Stack.Screen name="BlogPostDetail" component={BlogPostDetailScreen} />
     </Stack.Navigator>
   );
 }

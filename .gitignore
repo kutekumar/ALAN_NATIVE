@@ -1,0 +1,15 @@
+# Node modules
+node_modules/
+package-lock.json
+npm-debug.log
+
+# Expo files
+.expo/
+.expo-shared/
+
+# Android / iOS build folders
+android/
+ios/
+
+# Logs
+*.log

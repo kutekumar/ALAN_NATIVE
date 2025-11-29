@@ -8,19 +8,30 @@ import {
   ActivityIndicator,
   RefreshControl,
   Modal,
+  Image,
+  Dimensions,
+  StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { MobileLayout } from '../components';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthProvider';
+import type { MainStackParamList } from '../types';
 import { supabase } from '../services/supabase';
 import { textStyles } from '../styles/fonts';
+import QRCode from 'react-native-qrcode-svg';
+
+const { width } = Dimensions.get('window');
 
 interface Order {
   id: string;
   customer_id: string;
   restaurant_id: string;
+  restaurant_name?: string;
+  restaurant_image?: string;
+  restaurant_address?: string;
   order_type: string;
   payment_method: string;
   status: string;
@@ -33,16 +44,21 @@ interface Order {
   }>;
   total_amount: number;
   created_at: string;
+  restaurants?: {
+    name: string;
+    image_url: string;
+    address: string;
+  };
 }
 
+type OrdersScreenNavigationProp = StackNavigationProp<MainStackParamList>;
+
 export default function OrdersScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<OrdersScreenNavigationProp>();
   const { profile } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [qrModalVisible, setQrModalVisible] = useState(false);
 
   useEffect(() => {
     if (profile?.id) {
@@ -54,17 +70,34 @@ export default function OrdersScreen() {
     try {
       setLoading(true);
       
+      // Fetch actual orders with restaurant information
       const { data, error } = await supabase
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          restaurants (
+            name,
+            image_url,
+            address
+          )
+        `)
         .eq('customer_id', profile?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      setOrders(data || []);
+      // Transform data to include restaurant info at top level
+      const transformedOrders = (data || []).map(order => ({
+        ...order,
+        restaurant_name: order.restaurants?.name || 'Unknown Restaurant',
+        restaurant_image: order.restaurants?.image_url || 'https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg',
+        restaurant_address: order.restaurants?.address || 'Address not available'
+      }));
+
+      setOrders(transformedOrders);
     } catch (err: any) {
       console.error('Error fetching orders:', err);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -76,10 +109,6 @@ export default function OrdersScreen() {
     setRefreshing(false);
   };
 
-  const showQRCode = (order: Order) => {
-    setSelectedOrder(order);
-    setQrModalVisible(true);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -105,211 +134,237 @@ export default function OrdersScreen() {
     return orderItems.reduce((total, item) => total + item.quantity, 0);
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return {
+      date: date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+      }),
+      time: date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      })
+    };
+  };
+
+  const getOrderTypeIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'dine_in': return 'restaurant';
+      case 'takeaway': return 'bag';
+      case 'delivery': return 'bicycle';
+      default: return 'receipt';
+    }
+  };
+
+  const formatOrderTypeDisplay = (type: string) => {
+    const typeMap: { [key: string]: string } = {
+      'dine_in': 'Dine In',
+      'takeaway': 'Take Away',
+    };
+    return typeMap[type.toLowerCase()] || type;
+  };
+
   if (loading) {
     return (
-      <MobileLayout>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#D4AF37" />
-          <Text style={[styles.loadingText, textStyles.bodyMedium]}>
-            Loading your orders...
-          </Text>
-        </View>
-      </MobileLayout>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#D4AF37" />
+        <Text style={styles.loadingText}>
+          Loading your orders...
+        </Text>
+      </View>
     );
   }
 
   return (
-    <MobileLayout>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.headerTitle, textStyles.heading2]}>My Orders</Text>
-          <TouchableOpacity onPress={handleRefresh} disabled={refreshing}>
-            <Ionicons 
-              name="refresh" 
-              size={24} 
-              color={refreshing ? "#94a3b8" : "#D4AF37"} 
-            />
-          </TouchableOpacity>
-        </View>
-
-        {orders.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="receipt-outline" size={80} color="#94a3b8" />
-            <Text style={[styles.emptyTitle, textStyles.heading4]}>No orders yet</Text>
-            <Text style={[styles.emptyText, textStyles.bodyMedium]}>
-              Your order history will appear here
-            </Text>
-            <TouchableOpacity
-              style={styles.browseButton}
-              onPress={() => navigation.navigate('Home' as never)}
-            >
-              <Text style={[styles.browseButtonText, textStyles.buttonText]}>
-                Start Ordering
-              </Text>
+    <>
+      <StatusBar backgroundColor="transparent" barStyle="dark-content" translucent />
+      <LinearGradient
+        colors={['#f8fafc', '#ffffff', '#f1f5f9']}
+        style={styles.container}
+      >
+        <ScrollView
+          style={styles.ordersList}
+          contentContainerStyle={orders.length === 0 ? styles.emptyContent : styles.ordersContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+        >
+          {/* Header - now part of scrollable content */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>My Orders</Text>
+            <TouchableOpacity onPress={handleRefresh} disabled={refreshing}>
+              <View style={styles.refreshButton}>
+                <Ionicons 
+                  name="refresh" 
+                  size={20} 
+                  color={refreshing ? "#94a3b8" : "#D4AF37"} 
+                />
+              </View>
             </TouchableOpacity>
           </View>
-        ) : (
-          <ScrollView
-            style={styles.ordersList}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-            }
-          >
-            {orders.map((order) => (
-              <View key={order.id} style={styles.orderCard}>
-                <View style={styles.orderHeader}>
-                  <View style={styles.orderInfo}>
-                    <Text style={[styles.orderId, textStyles.heading6]}>
-                      Order #{order.qr_code}
-                    </Text>
-                    <Text style={[styles.orderDate, textStyles.bodySmall]}>
-                      {new Date(order.created_at).toLocaleDateString()} at{' '}
-                      {new Date(order.created_at).toLocaleTimeString()}
-                    </Text>
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}>
-                    <Ionicons 
-                      name={getStatusIcon(order.status) as any} 
-                      size={14} 
-                      color="#ffffff" 
-                    />
-                    <Text style={[styles.statusText, textStyles.caption]}>
-                      {order.status.toUpperCase()}
-                    </Text>
-                  </View>
-                </View>
 
-                <View style={styles.orderDetails}>
-                  <View style={styles.orderMeta}>
-                    <Text style={[styles.orderType, textStyles.bodySmall]}>
-                      {order.order_type} • {order.payment_method}
-                    </Text>
-                    <Text style={[styles.itemCount, textStyles.bodySmall]}>
-                      {getTotalItems(order.order_items)} item{getTotalItems(order.order_items) !== 1 ? 's' : ''}
-                    </Text>
-                  </View>
-                  
-                  <Text style={[styles.totalAmount, textStyles.heading6]}>
-                    ${order.total_amount.toFixed(2)}
-                  </Text>
-                </View>
-
-                <View style={styles.orderActions}>
-                  <TouchableOpacity
-                    style={styles.qrButton}
-                    onPress={() => showQRCode(order)}
-                  >
-                    <Ionicons name="qr-code-outline" size={18} color="#D4AF37" />
-                    <Text style={[styles.qrButtonText, textStyles.buttonText]}>
-                      Show QR Code
-                    </Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={styles.detailsButton}
-                    onPress={() => navigation.navigate('OrderDetail' as never, { orderId: order.id } as never)}
-                  >
-                    <Text style={[styles.detailsButtonText, textStyles.buttonText]}>
-                      View Details
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+          {orders.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconContainer}>
+                <Ionicons name="receipt-outline" size={64} color="#D4AF37" />
               </View>
-            ))}
-          </ScrollView>
-        )}
-
-        {/* QR Code Modal */}
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={qrModalVisible}
-          onRequestClose={() => setQrModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.qrModalContent}>
+              <Text style={styles.emptyTitle}>No orders yet</Text>
+              <Text style={styles.emptyText}>
+                Your order history will appear here
+              </Text>
               <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setQrModalVisible(false)}
+                style={styles.browseButton}
+                onPress={() => navigation.navigate('Main')}
               >
-                <Ionicons name="close" size={24} color="#64748b" />
+                <LinearGradient
+                  colors={['#D4AF37', '#B8860B']}
+                  style={styles.browseGradient}
+                >
+                  <Text style={styles.browseButtonText}>
+                    Start Ordering
+                  </Text>
+                </LinearGradient>
               </TouchableOpacity>
+            </View>
+          ) : (
+            orders.map((order) => (
+              <TouchableOpacity
+                key={order.id}
+                style={styles.orderCard}
+                onPress={() => navigation.navigate('OrderDetail', { orderId: order.id })}
+                activeOpacity={0.7}
+              >
+                <LinearGradient
+                  colors={['#ffffff', '#fefefe']}
+                  style={styles.cardGradient}
+                >
+                  {/* Restaurant Image Header */}
+                  <View style={styles.imageContainer}>
+                    <Image
+                      source={{ uri: order.restaurant_image }}
+                      style={styles.restaurantImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.imageOverlay}>
+                      <LinearGradient
+                        colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.7)']}
+                        style={styles.imageGradient}
+                      />
+                      
+                      {/* Status Badge on Image */}
+                      <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}>
+                        <Ionicons 
+                          name={getStatusIcon(order.status) as any} 
+                          size={12} 
+                          color="#ffffff" 
+                        />
+                        <Text style={styles.statusText}>
+                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
 
-              {selectedOrder && (
-                <>
-                  <LinearGradient
-                    colors={['#D4AF37', '#FFD700']}
-                    style={styles.qrHeader}
-                  >
-                    <Ionicons name="qr-code" size={48} color="#ffffff" />
-                    <Text style={[styles.qrTitle, textStyles.heading4]}>
-                      Your Order QR Code
-                    </Text>
-                    <Text style={[styles.qrSubtitle, textStyles.bodyMedium]}>
-                      Show this to the restaurant
-                    </Text>
-                  </LinearGradient>
+                  {/* Restaurant Info Section */}
+                  <View style={styles.infoSection}>
+                    <View style={styles.restaurantHeader}>
+                      <Text style={styles.restaurantName}>
+                        {order.restaurant_name}
+                      </Text>
+                      <View style={styles.orderTypeContainer}>
+                        <Ionicons 
+                          name={getOrderTypeIcon(order.order_type) as any} 
+                          size={14} 
+                          color="#D4AF37" 
+                        />
+                        <Text style={styles.orderTypeText}>
+                          {formatOrderTypeDisplay(order.order_type)}
+                        </Text>
+                      </View>
+                    </View>
 
-                  <View style={styles.qrCodeContainer}>
-                    <View style={styles.qrCodeBox}>
-                      <Text style={[styles.qrCodeText, textStyles.heading1]}>
-                        {selectedOrder.qr_code}
+                    {/* Order Details */}
+                    <View style={styles.orderDetails}>
+                      <View style={styles.orderMeta}>
+                        <View style={styles.metaItem}>
+                          <Ionicons name="calendar-outline" size={14} color="#64748b" />
+                          <Text style={styles.metaText}>
+                            {formatDate(order.created_at).date}
+                          </Text>
+                        </View>
+                        <View style={styles.metaItem}>
+                          <Ionicons name="time-outline" size={14} color="#64748b" />
+                          <Text style={styles.metaText}>
+                            {formatDate(order.created_at).time}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.priceContainer}>
+                        <Text style={styles.priceLabel}>Total</Text>
+                        <Text style={styles.priceAmount}>
+                          ${order.total_amount.toFixed(2)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Order Items Summary */}
+                    <View style={styles.itemsSummary}>
+                      <Text style={styles.itemsText}>
+                        {getTotalItems(order.order_items)} items • Order #{order.id.slice(-6).toUpperCase()}
                       </Text>
                     </View>
-                    <Text style={[styles.qrInstructions, textStyles.bodySmall]}>
-                      Present this QR code to the restaurant staff to confirm your order
-                    </Text>
                   </View>
-
-                  <View style={styles.orderSummary}>
-                    <Text style={[styles.summaryTitle, textStyles.heading6]}>
-                      Order Summary
-                    </Text>
-                    <Text style={[styles.summaryText, textStyles.bodyMedium]}>
-                      {getTotalItems(selectedOrder.order_items)} items • ${selectedOrder.total_amount.toFixed(2)}
-                    </Text>
-                    <Text style={[styles.summaryText, textStyles.bodyMedium]}>
-                      {selectedOrder.order_type} • {selectedOrder.payment_method}
-                    </Text>
-                  </View>
-                </>
-              )}
-            </View>
-          </View>
-        </Modal>
-      </View>
-    </MobileLayout>
+                </LinearGradient>
+              </TouchableOpacity>
+            ))
+          )}
+        </ScrollView>
+      </LinearGradient>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     marginTop: 16,
     color: '#64748b',
+    fontSize: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    paddingTop: 80, // Space for sticky glass nav
+    paddingBottom: 20,
+    marginHorizontal: -20, // Compensate for ScrollView contentContainerStyle padding
   },
   headerTitle: {
-    color: '#1e293b',
+    fontSize: 28,
     fontWeight: '700',
+    color: '#1e293b',
+  },
+  refreshButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyContainer: {
     flex: 1,
@@ -317,81 +372,224 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 40,
   },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   emptyTitle: {
+    fontSize: 24,
+    fontWeight: '700',
     color: '#1e293b',
-    marginTop: 20,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptyText: {
+    fontSize: 16,
     color: '#64748b',
     textAlign: 'center',
     marginBottom: 32,
+    lineHeight: 24,
   },
   browseButton: {
-    backgroundColor: '#D4AF37',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  browseGradient: {
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    alignItems: 'center',
   },
   browseButtonText: {
     color: '#ffffff',
+    fontSize: 16,
     fontWeight: '600',
   },
   ordersList: {
     flex: 1,
+  },
+  ordersContent: {
     paddingHorizontal: 20,
+    paddingBottom: 120, // Space for glass bottom tabs
+  },
+  emptyContent: {
+    flexGrow: 1,
+    paddingBottom: 120, // Space for glass bottom tabs
   },
   orderCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
-    marginVertical: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    marginVertical: 10,
+    borderRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 15,
+    elevation: 8,
   },
-  orderHeader: {
-    flexDirection: 'row',
+  cardGradient: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.2)',
+  },
+  imageContainer: {
+    height: 120,
+    position: 'relative',
+  },
+  restaurantImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    padding: 16,
+  },
+  imageGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  infoSection: {
+    padding: 20,
+  },
+  restaurantHeader: {
     marginBottom: 12,
   },
-  orderInfo: {
+  restaurantName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 6,
+  },
+  orderTypeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  orderTypeText: {
+    fontSize: 14,
+    color: '#D4AF37',
+    fontWeight: '600',
+  },
+  orderDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 12,
+  },
+  orderMeta: {
     flex: 1,
   },
-  orderId: {
-    color: '#1e293b',
-    fontWeight: '700',
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  metaText: {
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  priceContainer: {
+    alignItems: 'flex-end',
+  },
+  priceLabel: {
+    fontSize: 12,
+    color: '#64748b',
     marginBottom: 4,
   },
-  orderDate: {
+  priceAmount: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#D4AF37',
+  },
+  itemsSummary: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  itemsText: {
+    fontSize: 13,
     color: '#64748b',
+    textAlign: 'center',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+    alignSelf: 'flex-end',
   },
   statusText: {
     color: '#ffffff',
     fontWeight: '600',
-    fontSize: 10,
+    fontSize: 11,
   },
-  orderDetails: {
+  dateTimeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  dateTimeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dateText: {
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  timeText: {
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  bottomSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceSection: {
+    flex: 1,
+  },
+  qrButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  qrGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  qrButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  orderDetailsBottomSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  orderMeta: {
+  orderMetaBottomSection: {
     flex: 1,
   },
   orderType: {
@@ -409,7 +607,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  qrButton: {
+  qrActionButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -421,7 +619,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     gap: 6,
   },
-  qrButtonText: {
+  qrActionButtonText: {
     color: '#D4AF37',
     fontWeight: '600',
     fontSize: 14,
@@ -444,9 +642,100 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalBlur: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  modalContent: {
+    width: width * 0.95,
+    maxWidth: 450,
+    maxHeight: '90%',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderRadius: 24,
+    padding: 0,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1e293b',
+    flex: 1,
+    textAlign: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 0,
+    top: -8,
+  },
+  qrContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  qrCodeContainer: {
+    marginBottom: 24,
+  },
+  qrBackground: {
+    padding: 24,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#D4AF37',
+  },
+  qrPattern: {
+    marginBottom: 16,
+  },
+  qrGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: 160,
+    height: 160,
+    borderWidth: 2,
+    borderColor: '#000000',
+  },
+  qrPixel: {
+    width: 18,
+    height: 18,
+    margin: 1,
+  },
+  qrCodeText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1e293b',
+    fontFamily: 'monospace',
+  },
+  orderInfo: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  orderInfoTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  orderInfoAmount: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#D4AF37',
+  },
+  qrInstructions: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   qrModalContent: {
     width: '90%',
@@ -454,15 +743,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 20,
     overflow: 'hidden',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    zIndex: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 20,
-    padding: 8,
   },
   qrHeader: {
     alignItems: 'center',
@@ -480,10 +760,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
   },
-  qrCodeContainer: {
-    padding: 32,
-    alignItems: 'center',
-  },
   qrCodeBox: {
     backgroundColor: '#f8fafc',
     borderWidth: 3,
@@ -492,17 +768,6 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 16,
     alignItems: 'center',
-  },
-  qrCodeText: {
-    color: '#1e293b',
-    fontFamily: 'monospace',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  qrInstructions: {
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 18,
   },
   orderSummary: {
     backgroundColor: '#f8fafc',

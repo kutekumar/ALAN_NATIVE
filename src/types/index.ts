@@ -17,6 +17,7 @@ export type MainStackParamList = {
   Cart: undefined;
   Checkout: undefined;
   OrderDetail: { orderId: string };
+  BlogPostDetail: { blogPost: BlogPost };
 };
 
 // User types
@@ -116,4 +117,54 @@ export interface CartItem {
   price: number;
   quantity: number;
   restaurantId: string;
+}
+// Blog types based on database schema
+export interface BlogPost {
+  id: string; // UUID from database
+  restaurant_id: string; // Restaurant ID from database
+  author_id: string; // Author ID from database
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string;
+  hero_image_url: string;
+  is_published: boolean;
+  is_pinned: boolean;
+  created_at: string;
+  updated_at: string;
+  // Additional fields for UI
+  author_name?: string; // Will be populated from profiles table
+  restaurant_name?: string; // Will be populated from restaurants table
+  read_time?: number; // Calculated based on content length
+}
+
+export interface BlogFilters {
+  featured?: boolean;
+  limit?: number;
+  offset?: number;
+  restaurant_id?: string;
+  published?: boolean;
+}
+
+export interface BlogComment {
+  id: string;
+  blog_post_id: string;
+  customer_id: string;
+  content: string;
+  is_edited: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  parent_comment_id?: string;
+  customer_name?: string; // Will be populated from profiles table
+  customer_avatar?: string; // Will be populated from profiles table
+}
+
+export interface BlogPostImage {
+  id: string;
+  blog_post_id: string;
+  image_url: string;
+  caption?: string;
+  position?: number;
+  created_at: string;
 }

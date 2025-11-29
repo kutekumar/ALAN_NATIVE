@@ -91,3 +91,6 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 4. Build order management
 5. Add push notifications
 6. Implement user profile management
+
+
+

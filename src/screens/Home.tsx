@@ -109,23 +109,24 @@ export default function HomeScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery, refetchRestaurants]);
 
-  // Ensure restaurants load on initial mount and when profile is ready
+  // Force data load when component mounts (since we remount on tab switch)
   React.useEffect(() => {
-    if (profile && !searchQuery) {
-      // Initial load when user profile is available
+    // Clear cache and fetch fresh data on component mount
+    queryClient.invalidateQueries({ queryKey: ['restaurants'] });
+    queryClient.invalidateQueries({ queryKey: ['restaurants', 'featured'] });
+    
+    // Reset state for fresh start
+    setPage(0);
+    setAllRestaurants([]);
+    
+    // Fetch fresh data
+    const timer = setTimeout(() => {
       refetchRestaurants();
-    }
-  }, [profile, refetchRestaurants]);
-  
-  // Force refetch when coming back from empty state
-  React.useEffect(() => {
-    if (!restaurantsLoading && allRestaurants.length === 0 && !searchQuery && page === 0) {
-      const timer = setTimeout(() => {
-        refetchRestaurants();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [allRestaurants.length, searchQuery, page, restaurantsLoading, refetchRestaurants]);
+      refetchFeatured();
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, []); // Empty dependency array since component remounts on tab switch
 
   const filteredFeatured = featuredRestaurants.filter(restaurant => 
     restaurant.rating >= 4
@@ -217,6 +218,7 @@ export default function HomeScreen() {
       </View>
     </View>
   );
+  
   const renderTopRestaurantsSection = () => {
     if (filteredFeatured.length === 0) return null;
 
@@ -245,27 +247,23 @@ export default function HomeScreen() {
   };
 
   return (
-    <MobileLayout>
-      <StatusBar backgroundColor="#ffffff" barStyle="dark-content" />
+    <>
+      <StatusBar backgroundColor="transparent" barStyle="dark-content" translucent />
       <LinearGradient
         colors={['#f8fafc', '#ffffff', '#f1f5f9']}
         style={styles.container}
       >
-        <SafeAreaView style={styles.safeArea}>
-          <Animated.View 
-            style={[
-              styles.animatedContainer,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            {/* Header with Greeting and Search */}
-            {renderHeader()}
-
-            {/* Main Content */}
-            <FlatList
+        <Animated.View 
+          style={[
+            styles.animatedContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          {/* Main Content - Header moved to ListHeaderComponent for scrollable content */}
+          <FlatList
               style={styles.mainList}
               showsVerticalScrollIndicator={false}
               scrollEventThrottle={16}
@@ -280,11 +278,14 @@ export default function HomeScreen() {
               }
               ListHeaderComponent={() => (
                 <View style={styles.listHeader}>
+                  {/* Header with Greeting and Search */}
+                  {renderHeader()}
+
                   {/* Top Restaurants Section */}
                   {renderTopRestaurantsSection()}
 
                   {/* All Restaurants Section Header */}
-                  {(allRestaurants.length > 0 || searchQuery) && (
+                  {(allRestaurants.length > 0 || searchQuery) ? (
                     <View style={styles.allRestaurantsHeader}>
                       {searchQuery ? (
                         <Text style={styles.sectionTitle}>
@@ -298,7 +299,7 @@ export default function HomeScreen() {
                         </View>
                       )}
                     </View>
-                  )}
+                  ) : null}
                 </View>
               )}
               data={allRestaurants}
@@ -316,27 +317,29 @@ export default function HomeScreen() {
                   </View>
                 ) : null
               }
-              ListEmptyComponent={() =>
-                !restaurantsLoading && !featuredLoading && searchQuery ? (
-                  <View style={styles.emptyContainer}>
-                    <View style={styles.emptyContent}>
-                      <Text style={styles.emptyIcon}>🔍</Text>
-                      <Text style={styles.emptyTitle}>
-                        No restaurants found
-                      </Text>
-                      <Text style={styles.emptyMessage}>
-                        Try adjusting your search or browse our top restaurants above.
-                      </Text>
+              ListEmptyComponent={() => {
+                if (!restaurantsLoading && !featuredLoading && searchQuery) {
+                  return (
+                    <View style={styles.emptyContainer}>
+                      <View style={styles.emptyContent}>
+                        <Text style={styles.emptyIcon}>🔍</Text>
+                        <Text style={styles.emptyTitle}>
+                          No restaurants found
+                        </Text>
+                        <Text style={styles.emptyMessage}>
+                          Try adjusting your search or browse our top restaurants above.
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                ) : null
-              }
+                  );
+                }
+                return null;
+              }}
               contentContainerStyle={styles.listContent}
             />
-          </Animated.View>
-        </SafeAreaView>
+        </Animated.View>
       </LinearGradient>
-    </MobileLayout>
+    </>
   );
 }
 
@@ -353,7 +356,7 @@ const styles = StyleSheet.create({
   // Header styles
   header: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 80, // Reduced padding - just enough space for sticky glass nav
     paddingBottom: 12,
   },
   greetingContainer: {
@@ -419,16 +422,12 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         borderWidth: 0,
-        outlineStyle: 'none',
       },
       android: {
         borderWidth: 0,
-        outlineStyle: 'none',
       },
       web: {
         borderWidth: 0,
-        outlineStyle: 'none',
-        outlineWidth: 0,
       },
     }),
   },
@@ -447,7 +446,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   listContent: {
-    paddingBottom: 40,
+    paddingBottom: 100, // Space for glass bottom tabs
   },
   // Top restaurants section
   topRestaurantsSection: {

@@ -5,7 +5,7 @@ import { CartItem } from '../types';
 interface CartState {
   items: CartItem[];
   restaurantId: string | null;
-  orderType: 'Dine In' | 'Take Away';
+  orderType: 'dine_in' | 'takeaway';
 }
 
 interface CartContextType {
@@ -14,7 +14,7 @@ interface CartContextType {
   removeItem: (menuId: string) => void;
   updateQuantity: (menuId: string, quantity: number) => void;
   clearCart: () => void;
-  setOrderType: (type: 'Dine In' | 'Take Away') => void;
+  setOrderType: (type: 'dine_in' | 'takeaway') => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;
 }
@@ -37,7 +37,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cart, setCart] = useState<CartState>({
     items: [],
     restaurantId: null,
-    orderType: 'Dine In',
+    orderType: 'dine_in',
   });
 
   const addItem = (item: CartItem) => {
@@ -125,7 +125,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     setCart({
       items: [],
       restaurantId: null,
-      orderType: 'Dine In',
+      orderType: 'dine_in',
     });
   };
 

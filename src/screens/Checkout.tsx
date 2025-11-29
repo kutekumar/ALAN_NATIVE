@@ -18,7 +18,7 @@ import { useAuth } from '../context/AuthProvider';
 import { supabase } from '../services/supabase';
 import { textStyles } from '../styles/fonts';
 
-type PaymentMethod = 'MPU' | 'KBZPay' | 'AYAPAY' | 'OK$';
+type PaymentMethod = 'mpu' | 'kbzpay' | 'wavepay';
 
 interface PaymentOption {
   id: PaymentMethod;
@@ -28,17 +28,16 @@ interface PaymentOption {
 }
 
 const paymentOptions: PaymentOption[] = [
-  { id: 'MPU', name: 'MPU Card', icon: 'card-outline', color: '#3b82f6' },
-  { id: 'KBZPay', name: 'KBZ Pay', icon: 'wallet-outline', color: '#ef4444' },
-  { id: 'AYAPAY', name: 'AYA Pay', icon: 'phone-portrait-outline', color: '#22c55e' },
-  { id: 'OK$', name: 'OK Dollar', icon: 'cash-outline', color: '#f59e0b' },
+  { id: 'mpu', name: 'MPU Card', icon: 'card-outline', color: '#3b82f6' },
+  { id: 'kbzpay', name: 'KBZ Pay', icon: 'wallet-outline', color: '#ef4444' },
+  { id: 'wavepay', name: 'Wave Pay', icon: 'phone-portrait-outline', color: '#22c55e' },
 ];
 
 export default function CheckoutScreen() {
   const navigation = useNavigation();
   const { cart, getTotalPrice, clearCart } = useCart();
   const { profile } = useAuth();
-  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('MPU');
+  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('mpu');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const totalAmount = getTotalPrice();
@@ -56,6 +55,17 @@ export default function CheckoutScreen() {
         throw new Error('Missing required information');
       }
 
+      // Validate that restaurant exists in database
+      const { data: restaurantExists } = await supabase
+        .from('restaurants')
+        .select('id')
+        .eq('id', cart.restaurantId)
+        .single();
+
+      if (!restaurantExists) {
+        throw new Error('Invalid restaurant selected. Please select a valid restaurant.');
+      }
+
       const orderItems = cart.items.map(item => ({
         id: item.menuId,
         name: item.name,
@@ -68,11 +78,12 @@ export default function CheckoutScreen() {
         restaurant_id: cart.restaurantId,
         order_type: cart.orderType,
         payment_method: selectedPayment,
-        status: 'paid',
         qr_code: generateQRCode(),
         order_items: orderItems,
         total_amount: totalAmount,
       };
+
+      console.log('Order data to be inserted:', JSON.stringify(orderData, null, 2));
 
       const { data, error } = await supabase
         .from('orders')
@@ -80,7 +91,10 @@ export default function CheckoutScreen() {
         .select('id')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', JSON.stringify(error, null, 2));
+        throw error;
+      }
 
       return data.id;
     } catch (error) {
@@ -204,12 +218,12 @@ export default function CheckoutScreen() {
             <Text style={[styles.sectionTitle, textStyles.heading5]}>Order Type</Text>
             <View style={styles.orderTypeContainer}>
               <Ionicons 
-                name={cart.orderType === 'Dine In' ? 'restaurant-outline' : 'bag-outline'} 
+                name={cart.orderType === 'dine_in' ? 'restaurant-outline' : 'bag-outline'} 
                 size={24} 
                 color="#D4AF37" 
               />
               <Text style={[styles.orderTypeText, textStyles.bodyMedium]}>
-                {cart.orderType}
+                {cart.orderType === 'dine_in' ? 'Dine In' : 'Take Away'}
               </Text>
             </View>
           </View>

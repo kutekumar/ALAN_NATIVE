@@ -43,7 +43,7 @@ export default function RestaurantDetailScreen() {
   const [filteredMenuItems, setFilteredMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [localOrderType, setLocalOrderType] = useState<'Dine In' | 'Take Away'>('Dine In');
+  const [localOrderType, setLocalOrderType] = useState<'dine_in' | 'takeaway'>('dine_in');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -127,7 +127,7 @@ export default function RestaurantDetailScreen() {
   };
 
   // Update cart order type when user changes selection
-  const handleOrderTypeChange = (type: 'Dine In' | 'Take Away') => {
+  const handleOrderTypeChange = (type: 'dine_in' | 'takeaway') => {
     setLocalOrderType(type);
     setOrderType(type);
   };
@@ -204,6 +204,29 @@ export default function RestaurantDetailScreen() {
     }
   };
 
+  const renderHeroRating = () => {
+    if (!restaurant?.rating && restaurant?.rating !== 0) return null;
+    
+    return (
+      <View style={styles.heroRatingWrapper}>
+        <View style={styles.heroStars}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Ionicons
+              key={star}
+              name={star <= Math.floor(restaurant.rating) ? 'star' : 'star-outline'}
+              size={9}
+              color="#FFD700"
+              style={styles.heroStar}
+            />
+          ))}
+        </View>
+        <Text style={styles.heroRatingText}>
+          {restaurant.rating.toFixed(1)} • {restaurant.review_count || 0} reviews
+        </Text>
+      </View>
+    );
+  };
+
   // Since we don't have categories, we'll display all menu items in a single list
 
   if (loading) {
@@ -246,14 +269,20 @@ export default function RestaurantDetailScreen() {
   return (
     <MobileLayout backgroundImage={{ uri: 'https://images.pexels.com/photos/1581384/pexels-photo-1581384.jpeg' }}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Header Image and Info */}
-        <View style={styles.headerContainer}>
+        {/* Enhanced Header with Restaurant Info Overlay */}
+        <View style={styles.heroContainer}>
           <Image
             source={{
               uri: restaurant.image_url || 'https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg',
             }}
-            style={styles.headerImage}
+            style={styles.heroImage}
             resizeMode="cover"
+          />
+          
+          {/* Gradient Overlay for Better Text Contrast */}
+          <LinearGradient
+            colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)']}
+            style={styles.heroGradient}
           />
           
           {/* Back Button */}
@@ -261,66 +290,85 @@ export default function RestaurantDetailScreen() {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <View style={styles.backButtonContainer}>
-              <Ionicons name="arrow-back" size={24} color="#1e293b" />
-            </View>
+            <BlurView intensity={40} tint="light" style={styles.backButtonBlur}>
+              <Ionicons name="arrow-back" size={24} color="#ffffff" />
+            </BlurView>
           </TouchableOpacity>
 
-          {/* Restaurant Info Overlay */}
-          <View style={styles.infoOverlay}>
-            {renderGlassOverlay(
-              <View style={styles.restaurantInfo}>
-                <Text style={[styles.restaurantName, textStyles.heading2]}>
+          {/* Restaurant Complete Info Overlay */}
+          <View style={styles.heroInfoContainer}>
+            <BlurView intensity={60} tint="dark" style={styles.heroInfoBlur}>
+              {/* Main Restaurant Title - Centered */}
+              <View style={styles.heroMainInfo}>
+                <Text style={styles.heroRestaurantName}>
                   {restaurant.name}
                 </Text>
-                <Text style={[styles.cuisineType, textStyles.bodyMedium]}>
+                
+                {/* Restaurant Description - Centered below title */}
+                {restaurant.description && (
+                  <Text style={styles.heroDescriptionText}>
+                    {restaurant.description}
+                  </Text>
+                )}
+              </View>
+
+              {/* Restaurant Details Grid */}
+              <View style={styles.heroDetailsGrid}>
+                <Text style={styles.heroCuisineType}>
                   {restaurant.cuisine_type}
                 </Text>
-                {renderRating()}
+                
+                <View style={styles.heroRatingContainer}>
+                  {renderHeroRating()}
+                </View>
+
+                {/* Address */}
+                <View style={styles.heroDetailItem}>
+                  <View style={styles.heroIconContainer}>
+                    <Ionicons name="location" size={18} color="#D4AF37" />
+                  </View>
+                  <View style={styles.heroDetailText}>
+                    <Text style={styles.heroDetailLabel}>Location</Text>
+                    <Text style={styles.heroDetailValue}>{restaurant.address}</Text>
+                  </View>
+                </View>
+
+                {/* Phone */}
+                {restaurant.phone && (
+                  <TouchableOpacity 
+                    style={styles.heroDetailItem}
+                    onPress={handleCallRestaurant}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.heroIconContainer}>
+                      <Ionicons name="call" size={18} color="#D4AF37" />
+                    </View>
+                    <View style={styles.heroDetailText}>
+                      <Text style={styles.heroDetailLabel}>Phone</Text>
+                      <Text style={[styles.heroDetailValue, styles.heroPhoneText]}>
+                        {restaurant.phone}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+
+                {/* Opening Hours */}
+                <View style={styles.heroDetailItem}>
+                  <View style={styles.heroIconContainer}>
+                    <Ionicons name="time" size={18} color="#D4AF37" />
+                  </View>
+                  <View style={styles.heroDetailText}>
+                    <Text style={styles.heroDetailLabel}>Hours</Text>
+                    <Text style={styles.heroDetailValue}>{restaurant.open_hours}</Text>
+                  </View>
+                </View>
               </View>
-            )}
+            </BlurView>
           </View>
         </View>
 
-        {/* Restaurant Details */}
+        {/* Menu Section - Now Starts Earlier */}
         <View style={styles.detailsContainer}>
-          {/* Contact and Hours */}
-          <View style={styles.contactSection}>
-            <View style={styles.contactItem}>
-              <Ionicons name="location" size={20} color="#D4AF37" />
-              <Text style={[styles.contactText, textStyles.bodyMedium]}>
-                {restaurant.address}
-              </Text>
-            </View>
-            
-            {restaurant.phone && (
-              <TouchableOpacity style={styles.contactItem} onPress={handleCallRestaurant}>
-                <Ionicons name="call" size={20} color="#D4AF37" />
-                <Text style={[styles.contactText, styles.phoneText, textStyles.bodyMedium]}>
-                  {restaurant.phone}
-                </Text>
-              </TouchableOpacity>
-            )}
-            
-            <View style={styles.contactItem}>
-              <Ionicons name="time" size={20} color="#D4AF37" />
-              <Text style={[styles.contactText, textStyles.bodyMedium]}>
-                {restaurant.open_hours}
-              </Text>
-            </View>
-          </View>
-
-          {/* Restaurant Description */}
-          {restaurant.description && (
-            <View style={styles.descriptionSection}>
-              <Text style={[styles.sectionTitle, textStyles.heading4]}>
-                About
-              </Text>
-              <Text style={[styles.description, textStyles.bodyMedium]}>
-                {restaurant.description}
-              </Text>
-            </View>
-          )}
 
           {/* Order Type Selection */}
           <View style={styles.orderTypeSection}>
@@ -331,13 +379,13 @@ export default function RestaurantDetailScreen() {
               <TouchableOpacity
                 style={[
                   styles.tab,
-                  localOrderType === 'Dine In' && styles.activeTab,
+                  localOrderType === 'dine_in' && styles.activeTab,
                 ]}
-                onPress={() => handleOrderTypeChange('Dine In')}
+                onPress={() => handleOrderTypeChange('dine_in')}
               >
                 <Text style={[
                   styles.tabText,
-                  localOrderType === 'Dine In' && styles.activeTabText,
+                  localOrderType === 'dine_in' && styles.activeTabText,
                 ]}>
                   Dine In
                 </Text>
@@ -345,13 +393,13 @@ export default function RestaurantDetailScreen() {
               <TouchableOpacity
                 style={[
                   styles.tab,
-                  localOrderType === 'Take Away' && styles.activeTab,
+                  localOrderType === 'takeaway' && styles.activeTab,
                 ]}
-                onPress={() => handleOrderTypeChange('Take Away')}
+                onPress={() => handleOrderTypeChange('takeaway')}
               >
                 <Text style={[
                   styles.tabText,
-                  localOrderType === 'Take Away' && styles.activeTabText,
+                  localOrderType === 'takeaway' && styles.activeTabText,
                 ]}>
                   Take Away
                 </Text>
@@ -566,6 +614,139 @@ const styles = StyleSheet.create({
     marginTop: 16,
     color: '#64748b',
   },
+  // New Hero Section Styles - Half Size
+  heroContainer: {
+    position: 'relative',
+    height: height * 0.325, // Half of 0.65 = 0.325
+    marginBottom: 0,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  heroInfoContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 10, // 20 ÷ 2 = 10
+  },
+  heroInfoBlur: {
+    borderRadius: 10, // 20 ÷ 2 = 10
+    padding: 12, // 24 ÷ 2 = 12
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  heroMainInfo: {
+    marginBottom: 10, // 20 ÷ 2 = 10
+    alignItems: 'center', // Center alignment
+  },
+  heroRestaurantName: {
+    fontSize: 16, // 32 ÷ 2 = 16
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 4, // 8 ÷ 2 = 4
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 }, // 2 ÷ 2 = 1
+    textShadowRadius: 2, // 4 ÷ 2 = 2
+    textAlign: 'center', // Center text alignment
+  },
+  heroCuisineType: {
+    fontSize: 9, // 18 ÷ 2 = 9
+    color: '#D4AF37',
+    marginBottom: 6, // 12 ÷ 2 = 6
+    fontWeight: '500',
+  },
+  heroRatingContainer: {
+    marginBottom: 4, // 8 ÷ 2 = 4
+  },
+  heroRatingWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heroStars: {
+    flexDirection: 'row',
+    marginRight: 4, // 8 ÷ 2 = 4
+  },
+  heroStar: {
+    marginRight: 1, // 2 ÷ 2 = 1
+  },
+  heroRatingText: {
+    fontSize: 8, // 16 ÷ 2 = 8
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
+  },
+  heroDetailsGrid: {
+    marginBottom: 8, // 16 ÷ 2 = 8
+  },
+  heroDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 6, // 12 ÷ 2 = 6
+    paddingVertical: 2, // 4 ÷ 2 = 2
+  },
+  heroIconContainer: {
+    width: 16, // 32 ÷ 2 = 16
+    height: 16, // 32 ÷ 2 = 16
+    borderRadius: 8, // 16 ÷ 2 = 8
+    backgroundColor: 'rgba(212, 175, 55, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 6, // 12 ÷ 2 = 6
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.3)',
+  },
+  heroDetailText: {
+    flex: 1,
+  },
+  heroDetailLabel: {
+    fontSize: 6, // 12 ÷ 2 = 6
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 1, // 2 ÷ 2 = 1
+    fontWeight: '500',
+    textTransform: 'uppercase',
+  },
+  heroDetailValue: {
+    fontSize: 7.5, // 15 ÷ 2 = 7.5
+    color: '#ffffff',
+    fontWeight: '500',
+    lineHeight: 10, // 20 ÷ 2 = 10
+  },
+  heroPhoneText: {
+    textDecorationLine: 'underline',
+    color: '#D4AF37',
+  },
+  heroDescriptionContainer: {
+    marginTop: 4, // 8 ÷ 2 = 4
+    paddingTop: 8, // 16 ÷ 2 = 8
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  heroDescriptionText: {
+    fontSize: 7, // 14 ÷ 2 = 7
+    color: 'rgba(255, 255, 255, 0.8)',
+    lineHeight: 10, // 20 ÷ 2 = 10
+    fontStyle: 'italic',
+    textAlign: 'center', // Center text alignment
+    marginTop: 2, // Small spacing above description
+  },
+  backButtonBlur: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -604,7 +785,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
+    top: Platform.OS === 'ios' ? 60 : 30,
     left: 20,
     zIndex: 10,
   },

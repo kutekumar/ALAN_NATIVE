@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,8 +56,9 @@ export default function Profile() {
   };
 
   return (
-    <MobileLayout>
-      <SafeAreaView style={styles.container}>
+    <>
+      <StatusBar backgroundColor="transparent" barStyle="dark-content" translucent />
+      <View style={styles.container}>
       {/* Header Gradient */}
       <LinearGradient
         colors={['#FFF8DC', '#FFFFFF']}
@@ -201,8 +203,8 @@ export default function Profile() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      </SafeAreaView>
-    </MobileLayout>
+      </View>
+    </>
   );
 }
 
@@ -220,10 +222,11 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    paddingBottom: 100, // Space for glass bottom tabs
   },
   profileHeader: {
     alignItems: 'center',
-    paddingTop: 40,
+    paddingTop: 80, // Reduced padding for sticky glass nav
     paddingBottom: 30,
     paddingHorizontal: 24,
   },
