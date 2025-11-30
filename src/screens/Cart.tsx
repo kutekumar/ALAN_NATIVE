@@ -114,7 +114,7 @@ export default function CartScreen() {
                     {item.name}
                   </Text>
                   <Text style={[styles.itemPrice, textStyles.bodyMedium]}>
-                    ${item.price.toFixed(2)} each
+                    {item.price.toFixed(0)} MMK each
                   </Text>
                 </View>
 
@@ -140,7 +140,7 @@ export default function CartScreen() {
 
                 <View style={styles.itemTotal}>
                   <Text style={[styles.itemTotalText, textStyles.heading6]}>
-                    ${(item.price * item.quantity).toFixed(2)}
+                    {(item.price * item.quantity).toFixed(0)} MMK
                   </Text>
                   <TouchableOpacity
                     style={styles.removeButton}
@@ -160,14 +160,14 @@ export default function CartScreen() {
             <View style={styles.summaryRow}>
               <Text style={[styles.summaryLabel, textStyles.bodyMedium]}>Subtotal</Text>
               <Text style={[styles.summaryValue, textStyles.bodyMedium]}>
-                ${getTotalPrice().toFixed(2)}
+                {getTotalPrice().toFixed(0)} MMK
               </Text>
             </View>
             
             <View style={[styles.summaryRow, styles.totalRow]}>
               <Text style={[styles.totalLabel, textStyles.heading5]}>Total</Text>
               <Text style={[styles.totalValue, textStyles.heading5]}>
-                ${getTotalPrice().toFixed(2)}
+                {getTotalPrice().toFixed(0)} MMK
               </Text>
             </View>
           </View>

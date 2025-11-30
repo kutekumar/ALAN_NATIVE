@@ -530,7 +530,7 @@ export default function RestaurantDetailScreen() {
                   </Text>
                   <View style={styles.modalPriceContainer}>
                     <Text style={[styles.modalPrice, textStyles.heading4]}>
-                      ${selectedMenuItem.price.toFixed(2)}
+                      {selectedMenuItem.price.toFixed(0)} MMK
                     </Text>
                     <TouchableOpacity
                       style={styles.modalAddButton}
@@ -570,7 +570,7 @@ export default function RestaurantDetailScreen() {
                   {getTotalItems()} item{getTotalItems() !== 1 ? 's' : ''}
                 </Text>
                 <Text style={[styles.cartBarTotal, textStyles.buttonText]}>
-                  ${getTotalPrice().toFixed(2)}
+                  {getTotalPrice().toFixed(0)} MMK
                 </Text>
               </View>
               <View style={styles.cartBarButtons}>

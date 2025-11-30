@@ -102,31 +102,7 @@ export default function HomeScreen() {
   React.useEffect(() => {
     setPage(0);
     setAllRestaurants([]);
-    // Force refetch after state reset
-    const timer = setTimeout(() => {
-      refetchRestaurants();
-    }, 10);
-    return () => clearTimeout(timer);
-  }, [searchQuery, refetchRestaurants]);
-
-  // Force data load when component mounts (since we remount on tab switch)
-  React.useEffect(() => {
-    // Clear cache and fetch fresh data on component mount
-    queryClient.invalidateQueries({ queryKey: ['restaurants'] });
-    queryClient.invalidateQueries({ queryKey: ['restaurants', 'featured'] });
-    
-    // Reset state for fresh start
-    setPage(0);
-    setAllRestaurants([]);
-    
-    // Fetch fresh data
-    const timer = setTimeout(() => {
-      refetchRestaurants();
-      refetchFeatured();
-    }, 50);
-    
-    return () => clearTimeout(timer);
-  }, []); // Empty dependency array since component remounts on tab switch
+  }, [searchQuery]);
 
   const filteredFeatured = featuredRestaurants.filter(restaurant => 
     restaurant.rating >= 4
@@ -145,10 +121,8 @@ export default function HomeScreen() {
   const handleRefresh = useCallback(async () => {
     setPage(0);
     setAllRestaurants([]);
-    // Invalidate cache first, then refetch
-    queryClient.invalidateQueries({ queryKey: ['restaurants'] });
     await Promise.all([refetchFeatured(), refetchRestaurants()]);
-  }, [refetchFeatured, refetchRestaurants, queryClient]);
+  }, [refetchFeatured, refetchRestaurants]);
 
   const renderRestaurantItem = ({ item }: { item: Restaurant }) => (
     <NewRestaurantCard
@@ -204,10 +178,6 @@ export default function HomeScreen() {
                 style={styles.clearButton}
                 onPress={() => {
                   setSearchQuery('');
-                  setPage(0);
-                  setAllRestaurants([]);
-                  // Invalidate and refetch restaurants cache
-                  queryClient.invalidateQueries({ queryKey: ['restaurants'] });
                 }}
               >
                 <Ionicons name="close-circle" size={18} color="#B8860B" />

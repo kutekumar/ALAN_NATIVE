@@ -8,17 +8,23 @@ import {
   Image,
   StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthProvider';
 import { useOnboarding } from '../context/OnboardingProvider';
-import { textStyles } from '../styles/fonts';
-import { MobileLayout } from '../components';
+import { useCustomerLoyaltySummary } from '../hooks';
 
 export default function Profile() {
   const { profile, user, signOut } = useAuth();
   const { resetOnboarding } = useOnboarding();
+ 
+  const { data: loyaltySummary, isLoading: loyaltyLoading } =
+    useCustomerLoyaltySummary(user?.id);
+ 
+  const loyaltyPoints = loyaltySummary?.total_points ?? 0;
+  const loyaltyCompleted = loyaltySummary?.total_completed_orders ?? 0;
+  const loyaltySpent = loyaltySummary?.total_spent ?? 0;
+  const loyaltyBadge = loyaltySummary?.current_badge ?? 'Newbie';
 
   const handleLogout = async () => {
     try {
@@ -58,152 +64,181 @@ export default function Profile() {
   return (
     <>
       <StatusBar backgroundColor="transparent" barStyle="dark-content" translucent />
-      <View style={styles.container}>
-      {/* Header Gradient */}
       <LinearGradient
-        colors={['#FFF8DC', '#FFFFFF']}
-        style={styles.headerGradient}
-      />
+        colors={['#f8fafc', '#ffffff']}
+        style={styles.container}
+      >
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Profile Header */}
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarContainer}>
+              {profile?.avatar_url ? (
+                <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+              ) : (
+                <LinearGradient
+                  colors={['#D4AF37', '#FFD700']}
+                  style={styles.avatarGradient}
+                >
+                  <Text style={styles.avatarText}>{getInitials(profile?.full_name)}</Text>
+                </LinearGradient>
+              )}
+              <View style={styles.onlineIndicator} />
+            </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-            ) : (
-              <LinearGradient
-                colors={['#D4AF37', '#FFD700']}
-                style={styles.avatarGradient}
-              >
-                <Text style={[styles.avatarText, textStyles.heading3]}>{getInitials(profile?.full_name)}</Text>
-              </LinearGradient>
-            )}
-            <View style={styles.onlineIndicator} />
-          </View>
-
-          <View style={styles.profileInfo}>
-            <Text style={[styles.profileName, textStyles.heading2]}>
+            <Text style={styles.profileName}>
               {profile?.full_name || 'ALAN LUX User'}
             </Text>
-            <Text style={[styles.profileEmail, textStyles.body]}>{profile?.email}</Text>
+            <Text style={styles.profileEmail}>{profile?.email}</Text>
             {profile?.phone && (
               <View style={styles.phoneContainer}>
-                <Ionicons name="call" size={16} color="#64748B" />
-                <Text style={[styles.profilePhone, textStyles.bodySmall]}>{profile.phone}</Text>
+                <Ionicons name="call" size={14} color="#64748B" />
+                <Text style={styles.profilePhone}>{profile.phone}</Text>
               </View>
             )}
           </View>
-        </View>
 
-        {/* Profile Details Card */}
-        <View style={styles.detailsCard}>
-          <Text style={[styles.cardTitle, textStyles.heading3]}>Account Details</Text>
-          
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Ionicons name="person-outline" size={20} color="#D4AF37" />
+          {/* Loyalty Rewards Card */}
+          <View style={styles.loyaltyCard}>
+            <View style={styles.loyaltyHeader}>
+              <Ionicons name="trophy" size={24} color="#D4AF37" />
+              <Text style={styles.loyaltyTitle}>Loyalty Rewards</Text>
             </View>
-            <View style={styles.detailContent}>
-              <Text style={[styles.detailLabel, textStyles.label]}>Full Name</Text>
-              <Text style={[styles.detailValue, textStyles.body]}>
-                {profile?.full_name || 'Not provided'}
-              </Text>
+            
+            <View style={styles.badgeSection}>
+              <LinearGradient
+                colors={['#D4AF37', '#FFD700']}
+                style={styles.badgeCircle}
+              >
+                <Ionicons name="ribbon" size={32} color="#ffffff" />
+              </LinearGradient>
+              <Text style={styles.badgeName}>{loyaltyBadge}</Text>
+              <Text style={styles.badgeSubtext}>Current Tier</Text>
+            </View>
+
+            <View style={styles.statsGrid}>
+              <View style={styles.statBox}>
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="star" size={20} color="#D4AF37" />
+                </View>
+                <Text style={styles.statValue}>
+                  {loyaltyLoading ? '—' : loyaltyPoints}
+                </Text>
+                <Text style={styles.statLabel}>Points</Text>
+              </View>
+              
+              <View style={styles.statBox}>
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="checkmark-done-circle" size={20} color="#D4AF37" />
+                </View>
+                <Text style={styles.statValue}>
+                  {loyaltyLoading ? '—' : loyaltyCompleted}
+                </Text>
+                <Text style={styles.statLabel}>Completed</Text>
+              </View>
+              
+              <View style={styles.statBox}>
+                <View style={styles.statIconContainer}>
+                  <Ionicons name="cash" size={20} color="#D4AF37" />
+                </View>
+                <Text style={styles.statValue}>
+                  {loyaltyLoading ? '—' : loyaltySpent.toFixed(0)} MMK
+                </Text>
+                <Text style={styles.statLabel}>Spent</Text>
+              </View>
             </View>
           </View>
 
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Ionicons name="mail-outline" size={20} color="#D4AF37" />
+          {/* Account Details Card */}
+          <View style={styles.detailsCard}>
+            <Text style={styles.cardTitle}>Account Details</Text>
+            
+            <View style={styles.detailRow}>
+              <View style={styles.detailIcon}>
+                <Ionicons name="person-outline" size={20} color="#D4AF37" />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Full Name</Text>
+                <Text style={styles.detailValue}>
+                  {profile?.full_name || 'Not provided'}
+                </Text>
+              </View>
             </View>
-            <View style={styles.detailContent}>
-              <Text style={[styles.detailLabel, textStyles.label]}>Email Address</Text>
-              <Text style={[styles.detailValue, textStyles.body]}>{profile?.email}</Text>
+
+            <View style={styles.detailRow}>
+              <View style={styles.detailIcon}>
+                <Ionicons name="mail-outline" size={20} color="#D4AF37" />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Email Address</Text>
+                <Text style={styles.detailValue}>{profile?.email}</Text>
+              </View>
+            </View>
+
+            <View style={styles.detailRow}>
+              <View style={styles.detailIcon}>
+                <Ionicons name="call-outline" size={20} color="#D4AF37" />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Phone Number</Text>
+                <Text style={styles.detailValue}>
+                  {profile?.phone || 'Not provided'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.detailRow}>
+              <View style={styles.detailIcon}>
+                <Ionicons name="globe-outline" size={20} color="#D4AF37" />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Language</Text>
+                <Text style={styles.detailValue}>
+                  {profile?.language === 'en' ? 'English' : profile?.language || 'English'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.detailRow}>
+              <View style={styles.detailIcon}>
+                <Ionicons name="calendar-outline" size={20} color="#D4AF37" />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Member Since</Text>
+                <Text style={styles.detailValue}>
+                  {profile?.created_at ? formatDate(profile.created_at) : 'Unknown'}
+                </Text>
+              </View>
             </View>
           </View>
 
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Ionicons name="call-outline" size={20} color="#D4AF37" />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={[styles.detailLabel, textStyles.label]}>Phone Number</Text>
-              <Text style={[styles.detailValue, textStyles.body]}>
-                {profile?.phone || 'Not provided'}
-              </Text>
-            </View>
+          {/* Action Buttons */}
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity style={styles.editButton}>
+              <LinearGradient
+                colors={['#D4AF37', '#FFD700']}
+                style={styles.editButtonGradient}
+              >
+                <Ionicons name="create-outline" size={18} color="#ffffff" />
+                <Text style={styles.editButtonText}>Edit Profile</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.resetButton} onPress={handleResetOnboarding}>
+              <Ionicons name="refresh-outline" size={18} color="#64748B" />
+              <Text style={styles.resetButtonText}>Reset & See Onboarding</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={18} color="#EF4444" />
+              <Text style={styles.logoutButtonText}>Sign Out</Text>
+            </TouchableOpacity>
           </View>
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Ionicons name="globe-outline" size={20} color="#D4AF37" />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={[styles.detailLabel, textStyles.label]}>Language</Text>
-              <Text style={[styles.detailValue, textStyles.body]}>
-                {profile?.language === 'en' ? 'English' : profile?.language || 'English'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Ionicons name="calendar-outline" size={20} color="#D4AF37" />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={[styles.detailLabel, textStyles.label]}>Member Since</Text>
-              <Text style={[styles.detailValue, textStyles.body]}>
-                {profile?.created_at ? formatDate(profile.created_at) : 'Unknown'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Quick Stats */}
-        <View style={styles.statsCard}>
-          <Text style={[styles.cardTitle, textStyles.heading3]}>Your Activity</Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={[styles.statNumber, textStyles.heading2]}>0</Text>
-              <Text style={[styles.statLabel, textStyles.bodySmall]}>Orders</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={[styles.statNumber, textStyles.heading2]}>0</Text>
-              <Text style={[styles.statLabel, textStyles.bodySmall]}>Favorites</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={[styles.statNumber, textStyles.heading2]}>0</Text>
-              <Text style={[styles.statLabel, textStyles.bodySmall]}>Reviews</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Action Buttons */}
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.editButton}>
-            <LinearGradient
-              colors={['#D4AF37', '#FFD700']}
-              style={styles.editButtonGradient}
-            >
-              <Ionicons name="create-outline" size={20} color="#ffffff" />
-              <Text style={[styles.editButtonText, textStyles.buttonText]}>Edit Profile</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.resetButton} onPress={handleResetOnboarding}>
-            <Ionicons name="refresh-outline" size={20} color="#D4AF37" />
-            <Text style={[styles.resetButtonText, textStyles.body]}>Reset & See Onboarding</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-            <Text style={[styles.logoutButtonText, textStyles.body]}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-      </View>
+        </ScrollView>
+      </LinearGradient>
     </>
   );
 }
@@ -211,28 +246,22 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  headerGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 200,
   },
   scrollView: {
     flex: 1,
-    paddingBottom: 100, // Space for glass bottom tabs
+  },
+  scrollContent: {
+    paddingBottom: 120,
   },
   profileHeader: {
     alignItems: 'center',
-    paddingTop: 80, // Reduced padding for sticky glass nav
-    paddingBottom: 30,
+    paddingTop: 100,
+    paddingBottom: 24,
     paddingHorizontal: 24,
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   avatar: {
     width: 100,
@@ -249,198 +278,253 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: '#ffffff',
-  },
-  avatarText: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#ffffff',
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  onlineIndicator: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#22C55E',
-    borderWidth: 3,
-    borderColor: '#ffffff',
-  },
-  profileInfo: {
-    alignItems: 'center',
-  },
-  profileName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  profileEmail: {
-    fontSize: 16,
-    color: '#64748B',
-    marginBottom: 8,
-  },
-  phoneContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  profilePhone: {
-    fontSize: 14,
-    color: '#64748B',
-    marginLeft: 6,
-  },
-  detailsCard: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 24,
-    marginBottom: 24,
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#D4AF37',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.1)',
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 20,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  detailIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FEF7EE',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  detailContent: {
-    flex: 1,
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: '#64748B',
-    marginBottom: 4,
-  },
-  detailValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-  },
-  statsCard: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 24,
-    marginBottom: 24,
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#D4AF37',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.1)',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#D4AF37',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#64748B',
-  },
-  statDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: '#F1F5F9',
-    marginHorizontal: 16,
-  },
-  actionsContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  editButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 16,
     shadowColor: '#D4AF37',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
   },
+  avatarText: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  onlineIndicator: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#22C55E',
+    borderWidth: 3,
+    borderColor: '#ffffff',
+  },
+  profileName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginTop: 8,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  profileEmail: {
+    fontSize: 14,
+    color: '#64748B',
+    marginBottom: 6,
+  },
+  phoneContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  profilePhone: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  loyaltyCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#D4AF37',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.15)',
+  },
+  loyaltyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 10,
+  },
+  loyaltyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  badgeSection: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  badgeCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    shadowColor: '#D4AF37',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  badgeName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#D4AF37',
+    marginBottom: 4,
+  },
+  badgeSubtext: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  detailsCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 16,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  detailIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FEF7EE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  detailContent: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  actionsContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  editButton: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 12,
+    shadowColor: '#D4AF37',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 5,
+  },
   editButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    gap: 8,
   },
   editButtonText: {
     color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-    marginLeft: 8,
+    fontSize: 15,
+    fontWeight: '600',
   },
   resetButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#ffffff',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#D4AF37',
-    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    marginBottom: 12,
+    gap: 8,
   },
   resetButtonText: {
-    color: '#D4AF37',
-    fontSize: 16,
+    color: '#64748B',
+    fontSize: 14,
     fontWeight: '600',
-    marginLeft: 8,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#ffffff',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#FEE2E2',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#fee2e2',
+    gap: 8,
   },
   logoutButtonText: {
     color: '#EF4444',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    marginLeft: 8,
   },
 });

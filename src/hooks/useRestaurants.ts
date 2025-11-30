@@ -49,11 +49,12 @@ export const useRestaurants = (filters: RestaurantFilters = {}) => {
   return useQuery({
     queryKey: ['restaurants', filters],
     queryFn: () => fetchRestaurants(filters),
-    staleTime: 30 * 1000, // 30 seconds (reduced for better refresh)
-    gcTime: 2 * 60 * 1000, // 2 minutes
-    refetchOnMount: 'always', // Always refetch when component mounts
+    staleTime: 5 * 1000, // 5 seconds (reduced for better refresh)
+    gcTime: 30 * 1000, // 30 seconds
+    refetchOnMount: true, // Always refetch when component mounts
     refetchOnWindowFocus: false, // Don't refetch on window focus for better performance
-    retry: 2, // Retry failed requests
+    retry: 3, // Retry failed requests
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
   });
 };
 
@@ -61,10 +62,11 @@ export const useFeaturedRestaurants = () => {
   return useQuery({
     queryKey: ['restaurants', 'featured'],
     queryFn: () => fetchRestaurants({ limit: 10, offset: 0 }),
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 2 * 60 * 1000, // 2 minutes
-    refetchOnMount: 'always', // Always refetch when component mounts
+    staleTime: 5 * 1000, // 5 seconds
+    gcTime: 30 * 1000, // 30 seconds
+    refetchOnMount: true, // Always refetch when component mounts
     refetchOnWindowFocus: false,
-    retry: 2, // Retry failed requests
+    retry: 3, // Retry failed requests
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
   });
 };

@@ -12,7 +12,7 @@ export type RootStackParamList = {
 };
 
 export type MainStackParamList = {
-  Main: undefined;
+  Main: { initialTab?: 'Home' | 'Orders' | 'Blog' | 'Profile' } | undefined;
   RestaurantDetail: { restaurantId: string };
   Cart: undefined;
   Checkout: undefined;
@@ -118,6 +118,7 @@ export interface CartItem {
   quantity: number;
   restaurantId: string;
 }
+
 // Blog types based on database schema
 export interface BlogPost {
   id: string; // UUID from database
@@ -167,4 +168,27 @@ export interface BlogPostImage {
   caption?: string;
   position?: number;
   created_at: string;
+}
+
+// Loyalty & notifications types
+export interface CustomerLoyaltySummary {
+  customer_id: string;
+  total_points: number;
+  total_completed_orders: number;
+  total_spent: number;
+  current_badge: string;
+  updated_at: string;
+}
+
+export interface CustomerNotification {
+  id: string;
+  customer_id: string;
+  order_id?: string | null;
+  title: string;
+  message: string;
+  status: 'unread' | 'read';
+  created_at: string;
+  reply_content?: string | null;
+  restaurant_name?: string | null;
+  blog_post_id?: string | null;
 }

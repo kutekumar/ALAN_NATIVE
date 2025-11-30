@@ -9,6 +9,7 @@ interface GlassLayoutWrapperProps {
   onTabPress: (tabName: string) => void;
   onNotificationPress?: () => void;
   onLogoutPress?: () => void;
+  onNavigateToOrders?: () => void;
 }
 
 export const GlassLayoutWrapper: React.FC<GlassLayoutWrapperProps> = ({
@@ -16,7 +17,8 @@ export const GlassLayoutWrapper: React.FC<GlassLayoutWrapperProps> = ({
   activeTab,
   onTabPress,
   onNotificationPress,
-  onLogoutPress
+  onLogoutPress,
+  onNavigateToOrders
 }) => {
   return (
     <View style={styles.container}>
@@ -24,12 +26,13 @@ export const GlassLayoutWrapper: React.FC<GlassLayoutWrapperProps> = ({
       {children}
       
       {/* Glass Navigation Overlay */}
-      <GlassTopNav 
+      <GlassTopNav
         onNotificationPress={onNotificationPress}
         onLogoutPress={onLogoutPress}
+        onNavigateToOrders={onNavigateToOrders}
       />
       
-      <GlassBottomTabs 
+      <GlassBottomTabs
         activeTab={activeTab}
         onTabPress={onTabPress}
       />

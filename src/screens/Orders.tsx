@@ -307,7 +307,7 @@ export default function OrdersScreen() {
                       <View style={styles.priceContainer}>
                         <Text style={styles.priceLabel}>Total</Text>
                         <Text style={styles.priceAmount}>
-                          ${order.total_amount.toFixed(2)}
+                          {order.total_amount.toFixed(0)} MMK
                         </Text>
                       </View>
                     </View>

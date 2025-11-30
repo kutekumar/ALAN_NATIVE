@@ -69,7 +69,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
           {/* Column 1: Price */}
           <View style={styles.priceContainer}>
             <Text style={[styles.price, textStyles.heading5]}>
-              ${item.price.toFixed(2)}
+              {item.price.toFixed(0)} MMK
             </Text>
           </View>
 

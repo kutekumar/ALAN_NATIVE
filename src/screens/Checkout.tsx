@@ -119,22 +119,22 @@ export default function CheckoutScreen() {
       Alert.alert('Error', 'Your cart is empty.');
       return;
     }
-
+ 
     setIsProcessing(true);
     
     console.log('Starting payment process...');
     console.log('Cart items:', cart.items);
     console.log('Profile ID:', profile?.id);
     console.log('Restaurant ID:', cart.restaurantId);
-
+ 
     try {
       // Simulate payment processing
       const paymentSuccess = await simulatePayment();
-
+ 
       if (!paymentSuccess) {
         throw new Error('Payment failed. Please try again.');
       }
-
+ 
       // Create order in database
       const orderDataForLog = {
         customer_id: profile?.id,
@@ -153,17 +153,42 @@ export default function CheckoutScreen() {
       
       const orderId = await createOrder();
       console.log('Order created with ID:', orderId);
-
+ 
       if (!orderId) {
         throw new Error('Failed to create order.');
       }
 
+      // Create in-app notification for this order (unread by default)
+      try {
+        if (profile?.id) {
+          let restaurantName: string | null = null;
+          if (cart.restaurantId) {
+            const { data: restaurant } = await supabase
+              .from('restaurants')
+              .select('name')
+              .eq('id', cart.restaurantId)
+              .single();
+            restaurantName = restaurant?.name ?? null;
+          }
+
+          await supabase.from('customer_notifications').insert({
+            customer_id: profile.id,
+            order_id: orderId,
+            title: 'Order placed successfully',
+            message: `Your order ${orderId.slice(-6).toUpperCase()} has been placed.`,
+            restaurant_name: restaurantName,
+          });
+        }
+      } catch (notifyError) {
+        console.error('Error creating order notification:', notifyError);
+      }
+ 
       // Clear cart after successful payment
       clearCart();
-
+ 
       // Navigate directly to OrderDetail screen
       navigation.navigate('OrderDetail' as never, { orderId } as never);
-
+ 
     } catch (error: any) {
       console.error('Payment error:', error);
       Alert.alert(
@@ -201,13 +226,13 @@ export default function CheckoutScreen() {
                   {cart.items.reduce((total, item) => total + item.quantity, 0)} items
                 </Text>
                 <Text style={[styles.summaryValue, textStyles.bodyMedium]}>
-                  ${getTotalPrice().toFixed(2)}
+                  {getTotalPrice().toFixed(0)} MMK
                 </Text>
               </View>
               <View style={[styles.summaryRow, styles.totalRow]}>
                 <Text style={[styles.totalLabel, textStyles.heading5]}>Total</Text>
                 <Text style={[styles.totalValue, textStyles.heading5]}>
-                  ${totalAmount.toFixed(2)}
+                  {totalAmount.toFixed(0)} MMK
                 </Text>
               </View>
             </View>
@@ -277,7 +302,7 @@ export default function CheckoutScreen() {
                     x{item.quantity}
                   </Text>
                   <Text style={[styles.itemTotal, textStyles.bodyMedium]}>
-                    ${(item.price * item.quantity).toFixed(2)}
+                    {(item.price * item.quantity).toFixed(0)} MMK
                   </Text>
                 </View>
               ))}
@@ -307,7 +332,7 @@ export default function CheckoutScreen() {
                 <>
                   <Ionicons name="card-outline" size={20} color="#ffffff" />
                   <Text style={[styles.paymentButtonText, textStyles.buttonText]}>
-                    Pay ${totalAmount.toFixed(2)}
+                    Pay {totalAmount.toFixed(0)} MMK
                   </Text>
                 </>
               )}

@@ -86,26 +86,28 @@ export default function BlogPostDetailScreen() {
   const contentWidth = isWideScreen ? Math.min(screenWidth * 0.7, 800) : screenWidth;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="chevron-back" size={28} color="#1f2937" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Blog Post</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <SafeAreaView style={styles.headerSafe}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="chevron-back" size={28} color="#1f2937" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Blog Post</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+      </SafeAreaView>
 
       {/* Main ScrollView */}
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
-        showsVerticalScrollIndicator={true}
+        showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
-        nestedScrollEnabled={true}
+        bounces={true}
       >
         {/* Wrapper for responsive width */}
         <View style={isWideScreen ? { alignItems: 'center' } : {}}>
@@ -283,7 +285,7 @@ export default function BlogPostDetailScreen() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -292,14 +294,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
+  headerSafe: {
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
   backButton: {
     padding: 8,
@@ -316,8 +321,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollViewContent: {
-    flexGrow: 1,
-    paddingBottom: 40,
+    paddingBottom: 100,
   },
   heroContainer: {
     position: 'relative',

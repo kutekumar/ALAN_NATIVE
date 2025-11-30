@@ -19,20 +19,30 @@ import { MobileLayout, GlassLayoutWrapper } from '../components';
 // Main Tab Navigator with Glass Effect
 const Stack = createStackNavigator();
 
-function CustomTabNavigator() {
-  const [activeTab, setActiveTab] = useState('Home');
+function CustomTabNavigator({ route }: { route: any }) {
+  const initialTab = route?.params?.initialTab ?? 'Home';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [homeKey, setHomeKey] = useState(0);
+
+  // Respond to changes in initialTab (e.g., View All Orders → Orders tab)
+  React.useEffect(() => {
+    if (route?.params?.initialTab && route.params.initialTab !== activeTab) {
+      setActiveTab(route.params.initialTab);
+    }
+  }, [route?.params?.initialTab]);
 
   const handleTabPress = (tabName: string) => {
     if (tabName === 'Home' && activeTab !== 'Home') {
-      // Force complete remount of Home component
-      setHomeKey(prev => prev + 1);
+      // Force complete remount of Home component with a slight delay
+      setTimeout(() => {
+        setHomeKey(prev => prev + 1);
+      }, 50);
     }
     setActiveTab(tabName);
   };
 
-  const handleNotificationPress = () => {
-    Alert.alert('Notifications', 'You have no new notifications');
+  const handleNavigateToOrders = () => {
+    setActiveTab('Orders');
   };
 
   const renderScreen = () => {
@@ -55,7 +65,7 @@ function CustomTabNavigator() {
       <GlassLayoutWrapper
         activeTab={activeTab}
         onTabPress={handleTabPress}
-        onNotificationPress={handleNotificationPress}
+        onNavigateToOrders={handleNavigateToOrders}
       >
         {renderScreen()}
       </GlassLayoutWrapper>

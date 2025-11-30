@@ -102,16 +102,10 @@ export default function OrderDetailScreen() {
   const closeModal = () => {
     navigation.goBack();
   };
-
+ 
   const navigateToOrders = () => {
-    // Go back to Checkout, then go back again, then navigate to Orders
-    navigation.goBack();
-    setTimeout(() => {
-      navigation.goBack();
-      setTimeout(() => {
-        navigation.navigate('Orders' as never);
-      }, 100);
-    }, 100);
+    // Jump to main app with Orders tab selected
+    navigation.navigate('Main', { initialTab: 'Orders' } as never);
   };
 
   if (loading) {
